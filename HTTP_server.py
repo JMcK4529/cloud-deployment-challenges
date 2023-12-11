@@ -12,29 +12,39 @@ class HTTPServer:
             print(f"Accepted connection from {client_address}.")
             
             while True:
-                print("Request so far: ", [entry.decode("utf-8") for entry in self.request])
+                print("Request so far: ", [entry for entry in self.request])
                 input = client_socket.recv(1024)
                 print(f"Received data from {client_address}.")
                 if not input:
                     client_socket.close()
                     break
                 
-                if input.decode('utf-8').strip() == "":
-                    print("Double return captured.")
-                    if (method:= self.request[0].decode('utf-8').split(" ")[0]) == "GET":
+                print("input: ", input.decode("utf-8"))
+                if "\r\n".encode("utf-8") in input:
+                    print("split: ", [line.decode("utf-8") for line in input.split("\r\n".encode("utf-8"))])
+                    [self.request.append(line.decode("utf-8")) for line in input.split("\r\n".encode("utf-8")) if line.decode("utf-8") != ""]
+                    if (method:= self.request[0].split(" ")[0]) == "GET":
                         print("GET detected.")
                         client_socket.send(self.respond())
                     else:
                         print(f"method: //{method}//")
+                # if input.decode('utf-8').strip() == "":
+                #     print("Double return captured.")
+                #     if (method:= self.request[0].decode('utf-8').split(" ")[0]) == "GET":
+                #         print("GET detected.")
+                #         client_socket.send(self.respond())
+                #     else:
+                #         print(f"method: //{method}//")
 
-                else:
-                    self.request.append(input)
-                    print("Data appended to response list.")
+                # else:
+                #     self.request.append(input)
+                #     print("Data appended to response list.")
 
 
     def respond(self):
-        request_line = self.request[0].decode('utf-8').split(" ")
-        if request_line[-1] != "HTTP/1.1\r\n":
+        request_line = self.request[0].split(" ")
+        print("request line: ", request_line)
+        if request_line[2] != "HTTP/1.1":
             return "HTTP/1.1 500 Internal Server Error\r\n".encode("utf-8")
         if request_line[0] == "GET":
             return self.get(request_line[1]).encode("utf-8")
